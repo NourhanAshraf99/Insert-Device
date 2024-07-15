@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api, non_constant_identifier_names, use_build_context_synchronously, avoid_print, prefer_typing_uninitialized_variables
+// ignore_for_file: library_private_types_in_public_api, non_constant_identifier_names, use_build_context_synchronously, avoid_print, prefer_typing_uninitialized_variables, avoid_renaming_method_parameters
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -381,8 +381,9 @@ class MyHomePageState extends State<MyHomePage> {
                 ),
                 style: ElevatedButton.styleFrom(
                   elevation: 16,
-                  backgroundColor: Color.fromARGB(255, 1, 18, 117),
-                  padding: EdgeInsets.symmetric(horizontal: 70, vertical: 15),
+                  backgroundColor: const Color.fromARGB(255, 1, 18, 117),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 70, vertical: 15),
                 ),
                 label: const Text("Scan Device Serial",
                     style: TextStyle(
