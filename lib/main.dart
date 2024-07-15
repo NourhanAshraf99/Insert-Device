@@ -5,8 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:http/http.dart' as http;
+import 'package:insert_new_device/models/category.dart';
+import 'package:insert_new_device/models/machine.dart';
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:insert_new_device/models/workCenters.dart';
 
 void main() {
   HttpOverrides.global =
@@ -30,6 +34,15 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class SearchMachine {
+  String Name;
+  int Code;
+  SearchMachine({
+    required this.Name,
+    required this.Code,
+  });
+}
+
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -44,12 +57,12 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MyHomePage> createState() => MyHomePageState();
 }
 
 final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-class _MyHomePageState extends State<MyHomePage> {
+class MyHomePageState extends State<MyHomePage> {
   static var _scanBarcode;
   Future<void> scanQR() async {
     String barcodeScanRes;
@@ -80,21 +93,297 @@ class _MyHomePageState extends State<MyHomePage> {
     debugPrint("bar code is: $barcodeScanRes");
   }
 
+  List<SearchMachine> machines = [];
+  static SearchMachine? MachineValue;
+
+  void getMachinesList(var cat) async {
+    machines.clear();
+    machines.add(SearchMachine(Code: -1, Name: "-"));
+    var response = await http.get(
+        Uri.parse('${CustomDialogState.API_Link}/MES/machineList'),
+        headers: {"catCode": "$cat"});
+    if (response.statusCode == 200) {
+      String body = utf8.decode(response.bodyBytes);
+      List<Machine>? list = ((jsonDecode("[$body]")) as List)
+          .map((data) => Machine.fromJson(data))
+          .toList();
+      machines = List<SearchMachine>.generate(
+          list[0].count,
+          (int index) => SearchMachine(
+              Code: list[0].items[index].code,
+              Name: "${list[0].items[index].name}"),
+          growable: true);
+      setState(() {});
+      if (machines.isNotEmpty) {
+        setState(() {
+          MachineValue = machines.first;
+        });
+      }
+    }
+  }
+
+  static Category? CategoryValue;
+  List<Category> CategoryList = [];
+  Future<void> getMachinesCategoryList() async {
+    CategoryList.clear();
+    CategoryList.add(Category(code: -1, name: "-"));
+    var response = await http.get(
+        Uri.parse("${CustomDialogState.API_Link}/MES/machinesCategoriesList"));
+    if (response.statusCode == 200) {
+      String body = utf8.decode(response.bodyBytes);
+      List<MachinesCategories>? list = ((jsonDecode("[$body]")) as List)
+          .map((data) => MachinesCategories.fromJson(data))
+          .toList();
+      for (int i = 0; i < list[0].count; i++) {
+        CategoryList.add(
+            Category(code: list[0].items[i].code, name: list[0].items[i].name));
+      }
+      if (CategoryList.isNotEmpty) {
+        setState(() {
+          CategoryValue = CategoryList.first;
+        });
+      }
+    } else {}
+  }
+
+  static WC? WorkCenterValue;
+  List<WC> workCentersList = [];
+  Future<void> getWorkCenterList() async {
+    workCentersList.clear();
+    var response = await http.get(
+        Uri.parse("${CustomDialogState.API_Link}/MES/workCenters"),
+        headers: {"owner": "0"});
+    if (response.statusCode == 200) {
+      String body = utf8.decode(response.bodyBytes);
+      List<WorkCenters>? list = ((jsonDecode("[$body]")) as List)
+          .map((data) => WorkCenters.fromJson(data))
+          .toList();
+      for (int i = 0; i < list[0].count; i++) {
+        workCentersList
+            .add(WC(code: list[0].items[i].code, name: list[0].items[i].name));
+      }
+      if (workCentersList.isNotEmpty) {
+        setState(() {
+          WorkCenterValue = workCentersList.first;
+        });
+      }
+    } else {}
+  }
+
+  @override
+  void initState() {
+    getWorkCenterList();
+    getMachinesCategoryList();
+    getMachinesList(-1);
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text(widget.title),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment(0.8, 1),
+              colors: <Color>[
+                Color.fromRGBO(15, 163, 231, 0.89),
+                Color.fromRGBO(0, 0, 102, .7),
+              ],
+              tileMode: TileMode.mirror,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            // boxShadow: const [
+            //   BoxShadow(
+            //       color: Color.fromARGB(255, 165, 164, 164), spreadRadius: 5),
+            // ],
+          ),
+        ),
+        title: Text(
+          widget.title,
+          style: const TextStyle(
+              color: Color.fromARGB(255, 31, 31, 31),
+              fontWeight: FontWeight.w400),
+        ),
         centerTitle: true,
       ),
       body: Center(
-        child: ElevatedButton.icon(
-            onPressed: () async {
-              scanQR();
-            },
-            icon: const Icon(Icons.qr_code),
-            label: const Text("Scan Device Serial")),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.03,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+              child: Card(
+                color: const Color.fromARGB(255, 233, 205, 226),
+                shadowColor: const Color.fromARGB(255, 143, 145, 146),
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.category,
+                    color: Color.fromARGB(255, 58, 1, 1),
+                  ),
+                  title: const Text(
+                    "Categories",
+                  ),
+                  subtitle: DropdownButton<Category>(
+                      isExpanded: true,
+                      value: CategoryValue,
+                      icon: const Icon(Icons.arrow_drop_down),
+                      elevation: 24,
+                      style: const TextStyle(color: Colors.deepPurple),
+                      underline: Container(
+                        height: 1,
+                        color: Colors.deepPurpleAccent,
+                      ),
+                      items: CategoryList.map<DropdownMenuItem<Category>>(
+                          (Category value) {
+                        return DropdownMenuItem<Category>(
+                          value: value,
+                          child: Text(
+                            value.name,
+                            textAlign: TextAlign.start,
+                            style: const TextStyle(
+                                //fontSize: 20,
+                                ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (Category? newValue) async {
+                        setState(
+                          () {
+                            CategoryValue = newValue!;
+                          },
+                        );
+                        getMachinesList(CategoryValue?.code);
+                      }),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.03,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+              child: Card(
+                color: const Color.fromARGB(255, 192, 218, 240),
+                shadowColor: const Color.fromARGB(255, 143, 145, 146),
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.construction,
+                    color: Color.fromARGB(255, 92, 0, 168),
+                  ),
+                  title: const Text(
+                    "Machines",
+                  ),
+                  subtitle: DropdownButton<SearchMachine>(
+                      isExpanded: true,
+                      borderRadius: const BorderRadius.all(Radius.circular(20)),
+                      value: MachineValue,
+                      icon: const Icon(Icons.arrow_drop_down),
+                      elevation: 24,
+                      style: const TextStyle(color: Colors.deepPurple),
+                      underline: Container(
+                        height: 1,
+                        color: Colors.deepPurpleAccent,
+                      ),
+                      items: machines.map<DropdownMenuItem<SearchMachine>>(
+                          (SearchMachine value) {
+                        return DropdownMenuItem<SearchMachine>(
+                          value: value,
+                          child: Text(
+                            value.Name,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                //fontSize: 20,
+                                ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (SearchMachine? newValue) {
+                        setState(
+                          () {
+                            MachineValue = newValue!;
+                          },
+                        );
+                      }),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.03,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+              child: Card(
+                color: const Color.fromARGB(255, 218, 192, 240),
+                shadowColor: const Color.fromARGB(255, 143, 145, 146),
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.home_work_sharp,
+                    color: Color.fromARGB(255, 3, 0, 168),
+                  ),
+                  title: const Text(
+                    "Work Centers",
+                  ),
+                  subtitle: DropdownButton<WC>(
+                      isExpanded: true,
+                      borderRadius: const BorderRadius.all(Radius.circular(20)),
+                      value: WorkCenterValue,
+                      icon: const Icon(Icons.arrow_drop_down),
+                      elevation: 24,
+                      style: const TextStyle(color: Colors.deepPurple),
+                      underline: Container(
+                        height: 1,
+                        color: Colors.deepPurpleAccent,
+                      ),
+                      items:
+                          workCentersList.map<DropdownMenuItem<WC>>((WC value) {
+                        return DropdownMenuItem<WC>(
+                          value: value,
+                          child: Text(
+                            "${value.name}",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                //fontSize: 20,
+                                ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (WC? newValue) {
+                        setState(
+                          () {
+                            WorkCenterValue = newValue!;
+                          },
+                        );
+                      }),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.15,
+            ),
+            ElevatedButton.icon(
+                onPressed: () async {
+                  scanQR();
+                },
+                icon: const Icon(
+                  Icons.qr_code,
+                  color: Color.fromARGB(255, 255, 255, 255),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color.fromARGB(255, 1, 18, 117),
+                  padding: EdgeInsets.symmetric(horizontal: 70, vertical: 15),
+                ),
+                label: const Text("Scan Device Serial",
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 255, 255, 255),
+                    ))),
+          ],
+        ),
       ),
     );
   }
@@ -103,10 +392,10 @@ class _MyHomePageState extends State<MyHomePage> {
 class CustomDialog extends StatefulWidget {
   const CustomDialog({super.key});
   @override
-  _CustomDialogState createState() => _CustomDialogState();
+  CustomDialogState createState() => CustomDialogState();
 }
 
-class _CustomDialogState extends State<CustomDialog> {
+class CustomDialogState extends State<CustomDialog> {
   final TextEditingController Description = TextEditingController();
 
   @override
@@ -115,9 +404,10 @@ class _CustomDialogState extends State<CustomDialog> {
     super.dispose();
   }
 
-  String API_Link = "https://46.4.15.249:9090/ords/appsoft"; // appsoft
-  //"http://46.4.15.249:9095/ords/mes"; //mes test schema
-  //"https://172.25.0.6:9090/ords/appsoft"; //sahinler local
+  static String API_Link =
+      //"https://46.4.15.249:9090/ords/appsoft"; // appsoft
+      //"http://46.4.15.249:9095/ords/mes"; //mes test schema
+      "https://172.25.0.6:9090/ords/appsoft"; //sahinler local
   //"https://46.4.15.249:9090/ords/sahinler"; // sahinler cloud
 
   Future PostNewDevice(
@@ -130,7 +420,9 @@ class _CustomDialogState extends State<CustomDialog> {
         body: jsonEncode(<String, String>{
           "deviceSerial": "$serial",
           "deviceDesc": "$desc",
-          //"machineCode": "$machineCode",
+          "machineCategoryCode": "${MyHomePageState.CategoryValue?.code}",
+          "machineCode": "${MyHomePageState.MachineValue?.Code}",
+          "workCenter": "${MyHomePageState.WorkCenterValue?.code}",
           "isShared": "$isShared"
         }));
     if (response.statusCode == 200) {
@@ -247,7 +539,7 @@ class _CustomDialogState extends State<CustomDialog> {
                         if (_formKey.currentState!.validate()) {
                           Navigator.of(context1).pop();
                           PostNewDevice(
-                              _MyHomePageState._scanBarcode,
+                              MyHomePageState._scanBarcode,
                               Description.text,
                               _value ? 1 : 0,
                               _scaffoldKey.currentContext!);
