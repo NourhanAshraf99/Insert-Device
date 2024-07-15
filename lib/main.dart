@@ -189,16 +189,18 @@ class MyHomePageState extends State<MyHomePage> {
               begin: Alignment.topLeft,
               end: Alignment(0.8, 1),
               colors: <Color>[
-                Color.fromRGBO(15, 163, 231, 0.89),
-                Color.fromRGBO(0, 0, 102, .7),
+                Color.fromRGBO(94, 189, 233, 0.886),
+                Color.fromRGBO(20, 20, 190, 0.698),
               ],
               tileMode: TileMode.mirror,
             ),
-            borderRadius: BorderRadius.circular(20),
-            // boxShadow: const [
-            //   BoxShadow(
-            //       color: Color.fromARGB(255, 165, 164, 164), spreadRadius: 5),
-            // ],
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: const [
+              BoxShadow(
+                  color: Color.fromARGB(255, 165, 164, 164),
+                  spreadRadius: 4,
+                  blurRadius: 8),
+            ],
           ),
         ),
         title: Text(
@@ -219,6 +221,7 @@ class MyHomePageState extends State<MyHomePage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
               child: Card(
+                elevation: 12,
                 color: const Color.fromARGB(255, 233, 205, 226),
                 shadowColor: const Color.fromARGB(255, 143, 145, 146),
                 child: ListTile(
@@ -269,6 +272,7 @@ class MyHomePageState extends State<MyHomePage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
               child: Card(
+                elevation: 12,
                 color: const Color.fromARGB(255, 192, 218, 240),
                 shadowColor: const Color.fromARGB(255, 143, 145, 146),
                 child: ListTile(
@@ -319,6 +323,7 @@ class MyHomePageState extends State<MyHomePage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
               child: Card(
+                elevation: 12,
                 color: const Color.fromARGB(255, 218, 192, 240),
                 shadowColor: const Color.fromARGB(255, 143, 145, 146),
                 child: ListTile(
@@ -375,6 +380,7 @@ class MyHomePageState extends State<MyHomePage> {
                   color: Color.fromARGB(255, 255, 255, 255),
                 ),
                 style: ElevatedButton.styleFrom(
+                  elevation: 16,
                   backgroundColor: Color.fromARGB(255, 1, 18, 117),
                   padding: EdgeInsets.symmetric(horizontal: 70, vertical: 15),
                 ),
